@@ -41,6 +41,11 @@ set $disp_int eDP-1
 # your displays after another 300 seconds, and turn your screens back on when
 # resumed. It will also lock your screen before your computer goes to sleep.
 
+exec swayidle \
+    timeout 600 'swaymsg "output * dpms off"' \
+    resume 'swaymsg "output * dpms on"' \
+    before-sleep swaylock -f -c 000040
+
 ### Input configuration
 #
 # Example configuration:
@@ -75,6 +80,7 @@ input "1133:16514:Logitech_MX_Master_3" {
 }
 
 input "1739:0:Synaptics_TM3512-010" {
+    # disable while typing is annoying
     dwt disabled
     tap enabled
     natural_scroll enabled
@@ -86,6 +92,7 @@ input * {
     xkb_options ctrl:nocaps,compose:rctrl,altwin:swap_lalt_lwin
 }
 input "25986:1549:wilba.tech_wilba.tech_WT60-D" {
+    # this keyboard has a right alt and no control, haven't gotten around to reflashing it yet
     xkb_options ctrl:nocaps,compose:ralt,altwin:swap_lalt_lwin
 }
 
@@ -231,31 +238,67 @@ mode "resize" {
 }
 bindsym $mod+r mode "resize"
 
+# Brightness control
 bindsym XF86MonBrightnessUp exec --no-startup-id light -T 1.25
 bindsym XF86MonBrightnessDown exec --no-startup-id light -T 0.80
+# External screen brightness control
 bindsym shift+XF86MonBrightnessUp exec sudo ddcutil --noverify --less-sleep --sleep-multiplier 0.05 setvcp 10 + 10 --async --nousb  --enable-capabilities-cache
 bindsym shift+XF86MonBrightnessDown exec sudo ddcutil --noverify --less-sleep --sleep-multiplier 0.05 setvcp 10 - 10 --async --nousb  --enable-capabilities-cache
+# Volume control
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +1dB
 bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -1dB
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle
 bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle
 
+# Lock screen
+bindsym $mod+grave exec --no-startup-id swaylock --screenshots --effect-blur 4x4 --fade-in 1 --inside-color ffffff33 --clock -r --text-color 000000ff
+# Lock screen but transparent!
+bindsym $mod+shift+grave exec --no-startup-id swaylock -c 00000000 --inside-color ffffff33 --clock -r --text-color 000000ff
+# Fullscreen screenshot
+bindsym Print exec "grim - | tee /home/kamnxt/Pictures/scrots/screenshot-$(date +%F_%T).png | wl-copy -t image/png"
+# Region screenshot
+bindsym shift+Print exec grim -g "$(slurp)" - | tee /home/kamnxt/Pictures/scrots/screenshot-$(date +%F_%T).png | wl-copy -t image/png
+
+# Waybar is nice
+exec --no-startup-id waybar
+
+# Quick firefox shortcut
+bindsym $mod+q exec firefox
+
+# Bluetooth switching
+bindsym $mod+x exec /home/kamnxt/bin/rofibt
+
 #
 # Status Bar:
 #
 # Read `man 5 sway-bar` for more information about this section.
-bar {
-    position top
+#bar {
+#    position top
+#
+#    # When the status_command prints a new line to stdout, swaybar updates.
+#    # The default just shows the current date and time.
+#    status_command while date +'%Y-%m-%d %I:%M:%S %p'; do sleep 1; done
+#
+#    colors {
+#        statusline #ffffff
+#        background #323232
+#        inactive_workspace #32323200 #32323200 #5c5c5c
+#    }
+#}
+#
 
-    # When the status_command prints a new line to stdout, swaybar updates.
-    # The default just shows the current date and time.
-    status_command while date +'%Y-%m-%d %I:%M:%S %p'; do sleep 1; done
+# Cool gaps and stuff
+default_border normal 0
+gaps inner 10px
+hide_edge_borders --i3 smart
 
-    colors {
-        statusline #ffffff
-        background #323232
-        inactive_workspace #32323200 #32323200 #5c5c5c
-    }
-}
+# Firefox pops up a "sharing indicator" when you use camera or microphone. Move it out of the way onto the bar.
+for_window [title="Firefox — Sharing Indicator"] floating enable
+for_window [title="Firefox — Sharing Indicator"] resize set height 25
+for_window [title="Firefox — Sharing Indicator"] move absolute position 300 -25
+no_focus [title="Firefox — Sharing Indicator"]
+
+# fcitx for cool keyboard stuff
+exec fcitx5
 
 include /etc/sway/config.d/*
